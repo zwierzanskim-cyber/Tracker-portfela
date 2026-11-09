@@ -1,0 +1,725 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Portfel Emerytalny</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=Public+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+:root {
+  --bg: #f4f8f4;
+  --surface: #ffffff;
+  --fg: #11261c;
+  --muted: #53685c;
+  --line: #d2e3d5;
+  --accent: #0f8a5f;
+  --accent-ink: #ffffff;
+  --good: #127a3c;
+  --bad: #b73225;
+  --gold: #d99b11;
+  --c-risk: #0f8a5f;
+  --c-def: #d99b11;
+  --font-display: "Bricolage Grotesque", "Segoe UI", sans-serif;
+  --font-body: "Public Sans", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #09140f; --surface: #11221a; --fg: #e2ede6; --muted: #8aa395; --line: #1e382b;
+    --accent: #22c58b; --accent-ink: #07120d; --good: #38d67e; --bad: #ff7e6b; --gold: #f5bc3b;
+    --c-risk: #22c58b; --c-def: #f5bc3b;
+    color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.45;
+  padding-block: 20px 96px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  background-image: radial-gradient(120% 50% at 50% -10%, color-mix(in srgb, var(--accent) 20%, transparent), transparent 70%);
+  background-repeat: no-repeat; background-attachment: fixed;
+}
+.wrap { position: relative; z-index: 1; max-width: 560px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+h1 { font-family: var(--font-display); font-size: 26px; margin: 0; letter-spacing: -0.01em; }
+h2 { font-family: var(--font-display); font-size: 18px; margin: 0; }
+.sub { color: var(--muted); font-size: 13px; }
+.mono, .num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+header { display: flex; flex-direction: column; gap: 4px; }
+.top-bar { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.auth-box { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.motto { font-family: var(--font-display); font-size: 13.5px; color: var(--accent); margin-top: 2px; }
+
+.summary { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 16px; box-shadow: 0 4px 20px rgba(15, 138, 95, 0.04); }
+.total { display: flex; flex-direction: column; gap: 2px; }
+.total .label { font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.total .big { font-family: var(--font-mono); font-size: 32px; font-weight: 600; color: var(--accent); overflow-wrap: anywhere; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px 16px; }
+.stat { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.stat .label { font-size: 12px; color: var(--muted); }
+.stat .val { font-family: var(--font-mono); font-size: 16px; font-weight: 500; overflow-wrap: anywhere; }
+.pos { color: var(--good); } .neg { color: var(--bad); }
+.note { font-size: 12px; color: var(--muted); }
+
+.alloc { display: flex; flex-direction: column; gap: 8px; }
+.bar { display: flex; height: 12px; border-radius: 6px; overflow: hidden; background: var(--line); gap: 2px; }
+.bar span { display: block; height: 100%; transition: width .3s ease; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12.5px; color: var(--muted); }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: middle; }
+
+.skeleton-bar { height: 12px; border-radius: 6px; background: linear-gradient(90deg, var(--line) 25%, color-mix(in srgb, var(--line) 50%, transparent) 50%, var(--line) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; }
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+#ddList { font-size: 12px; color: var(--muted); }
+#ddList summary { cursor: pointer; padding: 2px 0; font-weight: 500; }
+.ep { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 12px; padding: 6px 0; border-top: 1px solid var(--line); }
+
+section { display: flex; flex-direction: column; gap: 10px; }
+.sec-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.list { display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+
+#positions { background: transparent; border: 0; border-radius: 0; overflow: visible; gap: 12px; }
+.row { all: unset; box-sizing: border-box; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 16px; cursor: pointer; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); width: 100%; transition: background 0.15s, border-color 0.15s; }
+.row:hover { background: color-mix(in srgb, var(--accent) 4%, var(--surface)); border-color: var(--accent); }
+.row.prow { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "l w" "r r"; gap: 8px 12px; align-items: start; }
+.row.prow .l { grid-area: l; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.row.prow .w { grid-area: w; min-width: 0; font-family: var(--font-mono); font-size: 15px; font-weight: 600; color: var(--accent); text-align: right; }
+.row.prow .r { grid-area: r; text-align: left; display: flex; justify-content: space-between; align-items: center; gap: 8px; border-top: 1px solid var(--line); padding-top: 8px; width: 100%; }
+.row .name { font-weight: 600; font-size: 16.5px; overflow-wrap: anywhere; }
+.row .sub { font-size: 13px; color: var(--muted); }
+.row .v { font-family: var(--font-mono); font-size: 16px; font-weight: 600; }
+.row .p { font-family: var(--font-mono); font-size: 13.5px; }
+
+.badge { display: inline-block; font-size: 10.5px; font-weight: 700; text-transform: uppercase; padding: 2px 7px; border-radius: 5px; margin-left: 6px; vertical-align: middle; }
+.badge.ike { background: #e0f2fe; color: #0369a1; }
+.badge.ikze { background: #fef3c7; color: #b45309; }
+.badge.oki { background: #fce7f3; color: #be185d; }
+.badge.brak { background: var(--line); color: var(--muted); }
+
+.todo { font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--gold); }
+.empty { padding: 24px 16px; text-align: center; color: var(--muted); font-size: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; }
+
+.actions { display: flex; gap: 10px; flex-wrap: wrap; }
+button.btn { font: inherit; font-weight: 600; border-radius: 10px; padding: 11px 16px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+button.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+button.btn.danger { color: var(--bad); }
+button.btn:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.wrow { padding: 10px 0; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px; }
+.wrow:first-child { border-top: 0; }
+.whead { display: flex; justify-content: space-between; font-weight: 600; font-size: 14px; }
+.wbar { position: relative; height: 8px; border-radius: 4px; background: var(--line); }
+.wfill { display: block; height: 100%; border-radius: 4px; }
+.wtick { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--fg); transform: translateX(-1px); }
+.plan-row { display: flex; justify-content: space-between; gap: 12px; }
+.plan-row .v { font-family: var(--font-mono); font-weight: 500; }
+
+.scrim { position: fixed; inset: 0; background: rgba(5, 20, 12, 0.6); backdrop-filter: blur(3px); display: flex; align-items: flex-end; justify-content: center; z-index: 20; }
+.sheet { background: var(--surface); width: 100%; max-width: 560px; border-radius: 20px 20px 0 0; padding: 20px 16px calc(20px + env(safe-area-inset-bottom, 0px)); max-height: 90vh; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 -10px 30px rgba(0,0,0,0.15); }
+form { display: flex; flex-direction: column; gap: 12px; }
+label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
+input, select, textarea { font: inherit; font-size: 16px; color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 11px 12px; width: 100%; }
+textarea { font-family: var(--font-mono); font-size: 12px; resize: vertical; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.form-actions { display: flex; gap: 10px; justify-content: space-between; flex-wrap: wrap; margin-top: 6px; }
+.form-actions .grp { display: flex; gap: 10px; }
+
+.chart { width: 100%; height: auto; display: block; margin-top: 8px; }
+.chart text { fill: var(--muted); font-family: var(--font-mono); font-size: 9px; }
+.chart .grid { stroke: var(--line); stroke-width: 1; }
+.chart .inv { fill: none; stroke: var(--muted); stroke-width: 1.5; stroke-dasharray: 4 3; }
+.chart .val { fill: none; stroke: var(--accent); stroke-width: 2.2; stroke-linejoin: round; stroke-linecap: round; }
+.chart .dot { fill: var(--accent); stroke: var(--surface); stroke-width: 1.5; }
+.ckey { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 13px; color: var(--muted); }
+.ckey i { display: inline-block; width: 18px; height: 0; border-top: 2px solid var(--accent); vertical-align: middle; margin-right: 6px; }
+.ckey i.d { border-top: 2px dashed var(--muted); }
+
+.hrow { display: flex; justify-content: space-between; gap: 12px; padding: 12px 0; border-top: 1px solid var(--line); }
+.hrow:first-child { border-top: 0; }
+.hrow .l { display: flex; flex-direction: column; min-width: 0; gap: 1px; }
+.hrow .r { display: flex; flex-direction: column; text-align: right; flex: none; }
+.hrow .name { font-weight: 600; overflow-wrap: anywhere; }
+.hrow .v { font-family: var(--font-mono); font-size: 15px; }
+.hrow .p { font-family: var(--font-mono); font-size: 12.5px; }
+
+.status { font-size: 12px; color: var(--muted); text-align: center; margin-top: 10px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="top-bar">
+      <h1>Portfel Emerytalny</h1>
+      <div id="authBox" class="auth-box"><button class="btn" id="loginBtn" type="button">Logowanie Google</button></div>
+    </div>
+    <div class="sub" id="today"></div>
+    <div class="motto" id="motto"></div>
+  </header>
+
+  <div class="summary">
+    <div class="total">
+      <span class="label">Całkowita wartość majątku</span>
+      <span class="big" id="total">—</span>
+    </div>
+    <div class="stats">
+      <div class="stat"><span class="label">Wpłacono</span><span class="val" id="invested">—</span></div>
+      <div class="stat"><span class="label">Zysk całkowity</span><span class="val" id="profit">—</span></div>
+      <div class="stat"><span class="label">XIRR rocznie</span><span class="val" id="xirr">—</span></div>
+      <div class="stat"><span class="label">Maks. obsunięcie</span><span class="val" id="dd">—</span></div>
+    </div>
+    <div class="note" id="xirrNote"></div>
+    <div class="note" id="ddNote"></div>
+    <div class="note" id="ddPeriod"></div>
+    <details id="ddList" hidden>
+      <summary id="ddSum"></summary>
+      <div id="ddItems"></div>
+    </details>
+    <div class="alloc">
+      <div id="allocBarContainer"><div class="skeleton-bar"></div></div>
+      <div class="legend" id="legend"></div>
+    </div>
+  </div>
+
+  <section>
+    <div class="sec-head"><h2>Twoje Pozycje</h2><span class="sub" id="count"></span></div>
+    <div class="list" id="positions"></div>
+  </section>
+
+  <div class="actions">
+    <button class="btn primary" id="addPos" type="button">+ Dodaj pozycję</button>
+    <button class="btn" id="histBtn" type="button">Historia</button>
+    <button class="btn" id="chartBtn" type="button">Wykres</button>
+    <button class="btn" id="backupBtn" type="button">Kopia</button>
+  </div>
+
+  <section id="salesSec" hidden>
+    <div class="sec-head"><h2>Sprzedane</h2><span class="sub" id="salesSum"></span></div>
+    <div class="list" id="sales"></div>
+  </section>
+
+  <section>
+    <div class="sec-head"><h2>Alokacja Docelowa</h2><span class="sub">rebalans dopłatami</span></div>
+    <div class="panel">
+      <div class="two">
+        <label for="tRisk">Cel: Część Akcyjna (%)<input id="tRisk" inputmode="decimal" value="60"></label>
+        <label for="contrib">Planowana dopłata (zł)<input id="contrib" inputmode="decimal" placeholder="np. 2000"></label>
+      </div>
+      <div id="weightsPanel"></div>
+      <div id="plan"></div>
+    </div>
+    <div class="note">Reszta celu przypada na część obligacyjną. Plan rebalansu nie zakłada sprzedaży aktywów.</div>
+  </section>
+
+  <div class="status" id="status">Inicjalizacja...</div>
+</div>
+
+<div class="scrim" id="scrim" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" id="sheet"></div>
+</div>
+
+<!-- Firebase SDKs -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+  import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDpcMvkUYhMHcUAtAt9dZbVKpstNt8fUFM",
+    authDomain: "tracker-portfela.firebaseapp.com",
+    projectId: "tracker-portfela",
+    storageBucket: "tracker-portfela.firebasestorage.app",
+    messagingSenderId: "446109775033",
+    appId: "1:446109775033:web:373cc4649b7a80218fd768",
+    measurementId: "G-DEGN45Z3KM"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+  const provider = new GoogleAuthProvider();
+
+  var state = { positions: [], bonuses: [], history: [], sales: [], txns: [], targetRisk: 60 };
+  var remoteDocRef = null;
+  var isRemoteSyncing = false;
+  var LS_KEY = "portfel-emerytalny-v2";
+
+  function $(id) { return document.getElementById(id); }
+  function uid() { return Math.random().toString(36).slice(2, 10); }
+  var money = new Intl.NumberFormat("pl-PL", { style: "currency", currency: "PLN", maximumFractionDigits: 2 });
+  var pct = new Intl.NumberFormat("pl-PL", { style: "percent", minimumFractionDigits: 2, maximumFractionDigits: 2, signDisplay: "exceptZero" });
+  var pctPlain = new Intl.NumberFormat("pl-PL", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  var unitsFmt = new Intl.NumberFormat("pl-PL", { maximumFractionDigits: 6 });
+
+  function fmt(n) { return money.format(n || 0); }
+  function signed(n) { return (n > 0 ? "+" : "") + fmt(n); }
+  function fdate(iso) { if (!iso) return ""; var p = iso.split("-"); return p[2] + "." + p[1] + "." + p[0]; }
+  function todayIso() { var d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+  function dayMs(iso) { var p = iso.split("-"); return Date.UTC(+p[0], +p[1] - 1, +p[2]); }
+  function num(s) { var n = parseFloat(String(s).replace(/\s/g, "").replace(",", ".")); return isFinite(n) ? n : 0; }
+  function r2(n) { return Math.round(n * 100) / 100; }
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+
+  function unitsLine(p) {
+    var u = +p.units || 0; if (!(u > 0)) return "";
+    var avg = (+p.invested || 0) / u;
+    return '<span class="sub">' + unitsFmt.format(u) + ' szt. · śr. zakup ' + (avg > 0 ? fmt(avg) : "—") + '</span>';
+  }
+
+  // --- MATEMATYKA PORTFELA (XIRR & Drawdown) ---
+  function xirr(flows) {
+    var hasNeg = flows.some(function (f) { return f.amount < 0; });
+    var hasPos = flows.some(function (f) { return f.amount > 0; });
+    if (!hasNeg || !hasPos) return null;
+    var t0 = Math.min.apply(null, flows.map(function (f) { return f.t; }));
+    function npv(r) { return flows.reduce(function (s, f) { return s + f.amount / Math.pow(1 + r, (f.t - t0) / 86400000 / 365); }, 0); }
+    var lo = -0.9999, hi = 1000, flo = npv(lo), fhi = npv(hi);
+    if (flo * fhi > 0) return null;
+    for (var i = 0; i < 200; i++) {
+      var mid = (lo + hi) / 2, fm = npv(mid);
+      if (Math.abs(fm) < 1e-7) return mid;
+      if (flo * fm < 0) { hi = mid; fhi = fm; } else { lo = mid; flo = fm; }
+    }
+    return (lo + hi) / 2;
+  }
+
+  function compute() {
+    var invested = 0, internalSum = 0, value = 0, bonus = 0, sold = 0, flows = [], firstT = Infinity;
+    state.positions.forEach(function (p) {
+      invested += +p.invested || 0; value += +p.value || 0;
+      internalSum += Math.min(+p.internal || 0, +p.invested || 0);
+      var lots = Array.isArray(p.lots) ? p.lots : [], lotSum = 0;
+      lots.forEach(function (l) { lotSum += +l.amount || 0; if (l.date && +l.amount > 0) { var lt = dayMs(l.date); firstT = Math.min(firstT, lt); flows.push({ t: lt, amount: -(+l.amount) }); } });
+      var base = Math.max(0, (+p.invested || 0) - lotSum);
+      if (base > 0 && p.date) { var t = dayMs(p.date); firstT = Math.min(firstT, t); flows.push({ t: t, amount: -base }); }
+    });
+    (state.bonuses || []).forEach(function (b) {
+      bonus += +b.amount || 0;
+      if (b.date && (+b.amount || 0) > 0) flows.push({ t: dayMs(b.date), amount: +b.amount });
+    });
+    state.sales.forEach(function (s) {
+      var cost = +s.cost || 0, proceeds = +s.proceeds || 0;
+      invested += cost; sold += proceeds;
+      if (Array.isArray(s.lots) && s.lots.length) { s.lots.forEach(function (l) { if (l.date && +l.cost > 0) { var bt2 = dayMs(l.date); firstT = Math.min(firstT, bt2); flows.push({ t: bt2, amount: -(+l.cost) }); } }); }
+      else if (s.buyDate && cost > 0) { var bt = dayMs(s.buyDate); firstT = Math.min(firstT, bt); flows.push({ t: bt, amount: -cost }); }
+      if (s.date && proceeds > 0) flows.push({ t: dayMs(s.date), amount: proceeds });
+    });
+    var now = dayMs(todayIso());
+    flows.push({ t: now, amount: value });
+    var rate = invested > 0 && value > 0 ? xirr(flows) : null;
+    var days = isFinite(firstT) ? Math.round((now - firstT) / 86400000) : 0;
+    return { invested: invested - internalSum, value: value, bonus: bonus, profit: value + bonus + sold - invested, rate: rate, days: days };
+  }
+
+  function drawdown(cur) {
+    var tdy = todayIso();
+    var pts = state.history.map(function (x) { return { d: x.d, v: +x.v || 0 }; });
+    if (cur > 0) { if (pts.length && pts[pts.length - 1].d === tdy) pts[pts.length - 1].v = cur; else pts.push({ d: tdy, v: cur }); }
+    var peak = 0, max = 0, now = 0, maxAmt = 0, nowAmt = 0;
+    var peakD = null, ep = null;
+    pts.forEach(function (q) { var v = q.v; if (v > peak) { peak = v; peakD = q.d; } var d = peak > 0 ? (peak - v) / peak : 0; if (d > max) { max = d; maxAmt = peak - v; ep = { peakD: peakD, peakV: peak, troughD: q.d }; } now = d; nowAmt = peak - v; });
+    var rec = null;
+    if (ep) { for (var i = 0; i < pts.length; i++) { if (pts[i].d > ep.troughD && pts[i].v >= ep.peakV) { rec = pts[i].d; break; } } }
+    return { max: max, now: now, maxAmt: maxAmt, nowAmt: nowAmt, ep: ep, rec: rec };
+  }
+
+  function ddEpisodes(cur) {
+    var tdy = todayIso();
+    var pts = state.history.map(function (x) { return { d: x.d, v: +x.v || 0 }; });
+    if (cur > 0) { if (pts.length && pts[pts.length - 1].d === tdy) pts[pts.length - 1].v = cur; else pts.push({ d: tdy, v: cur }); }
+    var eps = [], peak = 0, peakD = null, ep = null;
+    pts.forEach(function (q) {
+      var v = q.v;
+      if (ep && v >= peak) { ep.rec = q.d; eps.push(ep); ep = null; }
+      if (v > peak) { peak = v; peakD = q.d; }
+      else if (v < peak) { if (!ep) ep = { peakD: peakD, peakV: peak, troughV: v, troughD: q.d, rec: null }; else if (v < ep.troughV) { ep.troughV = v; ep.troughD = q.d; } }
+    });
+    if (ep) eps.push(ep);
+    eps.forEach(function (e) { e.amt = e.peakV - e.troughV; e.depth = e.peakV > 0 ? e.amt / e.peakV : 0; });
+    return eps;
+  }
+
+  // --- RENDEROWANIE ---
+  function renderPlan() {
+    var risk = 0, def = 0;
+    state.positions.forEach(function (p) {
+      var v = +p.value || 0;
+      if (p.klasa === "akcje") risk += v; else def += v;
+    });
+    var T = risk + def, t = Math.min(100, Math.max(0, state.targetRisk || 60)) / 100;
+    var ti = $("tRisk"); if (document.activeElement !== ti) ti.value = String(Math.round(t * 100));
+    var w = $("weightsPanel"), plan = $("plan"); w.innerHTML = ""; plan.innerHTML = "";
+    if (T <= 0) { w.innerHTML = '<div class="empty">Wagi pojawią się po wpisaniu wartości pozycji.</div>'; return; }
+
+    [{ n: "Część Akcyjna", v: risk, tg: t, col: "var(--c-risk)" }, { n: "Część Obligacyjna", v: def, tg: 1 - t, col: "var(--c-def)" }].forEach(function (g) {
+      var cur = g.v / T, gap = g.tg * T - g.v;
+      var row = document.createElement("div"); row.className = "wrow";
+      row.innerHTML = '<div class="whead"><span class="name">' + g.n + '</span><span class="mono">' + pctPlain.format(cur * 100) + '% / cel ' + pctPlain.format(g.tg * 100) + '%</span></div>' +
+        '<div class="wbar"><span class="wfill" style="width:' + (cur * 100) + '%;background:' + g.col + '"></span><span class="wtick" style="left:' + (g.tg * 100) + '%"></span></div>' +
+        '<div class="sub">' + (Math.abs(gap) < 0.5 ? "Na celu" : gap > 0 ? "Brakuje " + fmt(gap) : "Nadwyżka " + fmt(-gap)) + '</div>';
+      w.appendChild(row);
+    });
+
+    var C = num($("contrib").value), html = "";
+    if (C > 0) {
+      var toRisk = Math.min(C, Math.max(0, t * (T + C) - risk)), toDef = C - toRisk;
+      html += '<div class="plan-row"><span>Część Akcyjna</span><span class="v pos">+' + fmt(toRisk) + '</span></div>';
+      html += '<div class="plan-row"><span>Część Obligacyjna</span><span class="v pos">+' + fmt(toDef) + '</span></div>';
+      html += '<div class="note">Po dopłacie: akcje ' + pctPlain.format((risk + toRisk) / (T + C) * 100) + '%, obligacje ' + pctPlain.format((def + toDef) / (T + C) * 100) + '%.</div>';
+    }
+    var need = 0, where = "";
+    if (risk / T < t && t < 1) { need = (t * T - risk) / (1 - t); where = "część akcyjną"; }
+    else if (def / T < 1 - t && t > 0) { need = ((1 - t) * T - def) / t; where = "część obligacyjną"; }
+    if (need > 0.5) html += '<div class="note">Pełny rebalans samymi dopłatami: ' + fmt(need) + ', w całości na ' + where + '.</div>';
+    plan.innerHTML = html;
+  }
+
+  function render() {
+    var c = compute();
+    $("today").textContent = "Stan na " + fdate(todayIso());
+    var mottos = ["Cierpliwość to najlepszy procent składany.", "Regularne wpłaty budują większy kapitał niż dobry timing.", "Każda dopłata to krok bliżej wolności.", "Spokój w spadkach jest częścią strategii.", "Czas na rynku ważniejszy niż moment wejścia.", "Mały nawyk dziś, duży kapitał za lata."];
+    $("motto").textContent = mottos[Math.floor(dayMs(todayIso()) / 86400000) % mottos.length];
+    $("total").textContent = fmt(c.value);
+    $("invested").textContent = fmt(c.invested);
+    
+    var pe = $("profit");
+    pe.textContent = c.invested > 0 ? signed(c.profit) + " (" + pct.format(c.profit / c.invested) + ")" : "—";
+    pe.className = "val " + (c.profit > 0 ? "pos" : c.profit < 0 ? "neg" : "");
+
+    var xe = $("xirr");
+    xe.textContent = c.rate == null ? "—" : pct.format(c.rate);
+    xe.className = "val " + (c.rate > 0 ? "pos" : c.rate < 0 ? "neg" : "");
+
+    var dd = drawdown(c.value);
+    $("dd").textContent = c.value > 0 ? (dd.max > 0 ? "−" : "") + pctPlain.format(dd.max * 100) + "% / " + (dd.max > 0 ? "−" : "") + fmt(dd.maxAmt) : "—";
+    $("dd").className = "val " + (dd.max > 0 ? "neg" : "");
+
+    function dniStr(n) { return n + (n === 1 ? " dzień" : " dni"); }
+    if (dd.ep && c.value > 0) {
+      var endD = dd.rec || todayIso(), nd = Math.round((dayMs(endD) - dayMs(dd.ep.peakD)) / 86400000);
+      $("ddPeriod").textContent = "Maks. obsunięcie: od " + fdate(dd.ep.peakD) + " (szczyt), dno " + fdate(dd.ep.troughD) + ", " + (dd.rec ? "wróciło do szczytu " + fdate(dd.rec) + ", trwało " + dniStr(nd) + "." : "w trakcie, trwa już " + dniStr(nd) + ".");
+    } else $("ddPeriod").textContent = c.value > 0 ? "Maks. obsunięcie: brak, portfel jest na szczycie." : "";
+    $("ddNote").textContent = "Obsunięcie od szczytu: " + pctPlain.format(dd.now * 100) + "% / " + fmt(dd.nowAmt) + ".";
+
+    var eps = ddEpisodes(c.value).filter(function (e) { return e.depth >= 0.01; }), lst = $("ddList"), items = $("ddItems");
+    lst.hidden = !(c.value > 0); items.innerHTML = "";
+    if (!eps.length) items.innerHTML = '<div class="ep">Brak obsunięć powyżej 1%.</div>';
+    $("ddSum").textContent = "Obsunięcia powyżej 1% (" + eps.length + ")";
+    eps.slice().reverse().forEach(function (e) {
+      var endD = e.rec || todayIso(), nd = Math.round((dayMs(endD) - dayMs(e.peakD)) / 86400000);
+      var row = document.createElement("div"); row.className = "ep";
+      row.innerHTML = '<span>' + fdate(e.peakD) + ' → ' + (e.rec ? fdate(e.rec) : 'w trakcie') + ' · ' + dniStr(nd) + '</span><span class="mono neg">−' + pctPlain.format(e.depth * 100) + '% / −' + fmt(e.amt) + '</span>';
+      items.appendChild(row);
+    });
+
+    $("xirrNote").textContent = c.rate == null ? "Uzupełnij historię i wyceny, aby obliczyć XIRR." : (c.days < 90 ? "Portfel ma " + c.days + " dni – roczny XIRR jest mało miarodajny." : "XIRR liczony od pierwszej wpłaty.");
+
+    // Alokacja wizualna
+    var akcjeVal = 0, oblVal = 0;
+    state.positions.forEach(function(p) {
+      if (p.klasa === "akcje") akcjeVal += +p.value || 0;
+      else oblVal += +p.value || 0;
+    });
+    var totalAlloc = akcjeVal + oblVal;
+    if (totalAlloc > 0) {
+      var pAkcje = akcjeVal / totalAlloc, pObl = oblVal / totalAlloc;
+      $("allocBarContainer").innerHTML = '<div class="bar"><span style="width:' + (pAkcje*100) + '%;background:var(--c-risk)"></span><span style="width:' + (pObl*100) + '%;background:var(--c-def)"></span></div>';
+      $("legend").innerHTML = '<span><i style="background:var(--c-risk)"></i>Akcje ' + Math.round(pAkcje*100) + '% ('+fmt(akcjeVal)+')</span>' +
+                              '<span><i style="background:var(--c-def)"></i>Obligacje ' + Math.round(pObl*100) + '% ('+fmt(oblVal)+')</span>';
+    } else {
+      $("allocBarContainer").innerHTML = '<div class="bar"><span style="width:100%;background:var(--line)"></span></div>';
+      $("legend").innerHTML = '<span class="sub">Brak wartości do alokacji</span>';
+    }
+
+    renderPlan();
+
+    // Sprzedane
+    var sl = $("sales"); sl.innerHTML = "";
+    $("salesSec").hidden = !state.sales.length;
+    var realized = 0;
+    state.sales.slice().sort(function (a, b) { return (b.date || "").localeCompare(a.date || ""); }).forEach(function (s) {
+      var g = (+s.proceeds || 0) - (+s.cost || 0); realized += g;
+      var b = document.createElement("button"); b.type = "button"; b.className = "row";
+      b.innerHTML = '<span class="l"><span class="name">' + esc(s.name) + '</span><span class="sub">sprzedane ' + fdate(s.date) + '</span></span><span class="r"><span class="v">' + fmt(+s.proceeds || 0) + '</span><span class="p ' + (g >= 0 ? "pos" : "neg") + '">' + signed(g) + '</span></span>';
+      b.onclick = function () { openSale(s.id); };
+      sl.appendChild(b);
+    });
+    $("salesSum").textContent = state.sales.length ? "wynik " + signed(realized) : "";
+
+    // Pozycje
+    var pl = $("positions"); pl.innerHTML = "";
+    $("count").textContent = state.positions.length ? state.positions.length + " poz." : "";
+    if (!state.positions.length) pl.innerHTML = '<div class="empty">Brak pozycji w portfelu. Kliknij "+ Dodaj pozycję".</div>';
+
+    state.positions.slice().sort(function (a, b) { return (b.value || 0) - (a.value || 0); }).forEach(function (p) {
+      var b = document.createElement("button"); b.type = "button"; b.className = "row prow";
+      var inv = +p.invested || 0, val = +p.value || 0, gain = val - inv;
+      var pok = (p.pokrowec || "brak").toLowerCase();
+      var badgeHtml = '<span class="badge ' + pok + '">' + pok.toUpperCase() + '</span>';
+      var right = inv > 0 && val > 0
+        ? '<span class="v">' + fmt(val) + '</span><span class="p ' + (gain >= 0 ? "pos" : "neg") + '">' + signed(gain) + " · " + pct.format(gain / inv) + "</span>"
+        : '<span class="todo">Uzupełnij kwoty</span>';
+      b.innerHTML = '<span class="l"><span class="name">' + esc(p.name) + badgeHtml + '</span><span class="sub">' + (p.klasa === "akcje" ? "Część Akcyjna" : "Część Obligacyjna") + (p.account ? " · " + esc(p.account) : "") + '</span>' + unitsLine(p) + '</span><span class="w">' + (c.value > 0 ? pctPlain.format(val / c.value * 100) + "%" : "—") + '</span><span class="r">' + right + "</span>";
+      b.onclick = function () { openPositionModal(p.id); };
+      pl.appendChild(b);
+    });
+  }
+
+  // --- ARCHEOGRAFIA & AKCJE SZYBKIE ---
+  function findCash() { return state.positions.filter(function (x) { return x.klasa === "obligacje" && x.name.toLowerCase().includes("xtb"); })[0] || null; }
+  function drawCash(amt) {
+    var c = findCash(); if (!c) return { drawn: 0, internal: 0 };
+    var d = Math.min(amt, +c.value || 0); if (!(d > 0)) return { drawn: 0, internal: 0 };
+    var inv = +c.invested || 0, ratio = inv > 0 ? Math.min(1, (+c.internal || 0) / inv) : 0, di = r2(d * ratio);
+    c.value = r2((+c.value || 0) - d); c.invested = r2(Math.max(0, inv - d)); c.internal = r2(Math.max(0, (+c.internal || 0) - di));
+    if (c.value < 0.005) state.positions = state.positions.filter(function (x) { return x.id !== c.id; });
+    return { drawn: r2(d), internal: di };
+  }
+
+  // --- ARKUSZE MODALNE (Sheets) ---
+  function closeSheet() { $("scrim").hidden = true; $("sheet").innerHTML = ""; }
+  $("scrim").onclick = function (e) { if (e.target === $("scrim")) closeSheet(); };
+  document.onkeydown = function (e) { if (e.key === "Escape" && !$("scrim").hidden) closeSheet(); };
+
+  function openPositionModal(id) {
+    var p = state.positions.find(function (x) { return x.id === id; }) || { id: null, name: "", klasa: "akcje", pokrowec: "ike", account: "", date: todayIso(), invested: "", value: "", units: "" };
+    $("sheet").innerHTML =
+      "<h2>" + (p.id ? "Edytuj pozycję" : "Nowa pozycja") + "</h2>" +
+      '<form id="pf">' +
+      '<label for="f-name">Nazwa aktywa<input id="f-name" required value="' + esc(p.name) + '" placeholder="np. VWCE lub Obligacje EDO"></label>' +
+      '<div class="two">' +
+        '<label for="f-klasa">Klasa portfela<select id="f-klasa"><option value="akcje"' + (p.klasa === "akcje" ? " selected" : "") + '>Część Akcyjna</option><option value="obligacje"' + (p.klasa === "obligacje" ? " selected" : "") + '>Część Obligacyjna</option></select></label>' +
+        '<label for="f-pokrowec">Pokrowec podatkowy<select id="f-pokrowec"><option value="brak"' + (p.pokrowec === "brak" ? " selected" : "") + '>Brak (Zwykły)</option><option value="ike"' + (p.pokrowec === "ike" ? " selected" : "") + '>IKE</option><option value="ikze"' + (p.pokrowec === "ikze" ? " selected" : "") + '>IKZE</option><option value="oki"' + (p.pokrowec === "oki" ? " selected" : "") + '>OKI</option></select></label>' +
+      '</div>' +
+      '<div class="two">' +
+        '<label for="f-account">Konto / Makler<input id="f-account" value="' + esc(p.account) + '" placeholder="np. XTB, PKO BP"></label>' +
+        '<label for="f-date">Data zakupu<input id="f-date" type="date" value="' + esc(p.date || todayIso()) + '"></label>' +
+      '</div>' +
+      '<div class="two">' +
+        '<label for="f-inv">Wpłacono (zł)<input id="f-inv" inputmode="decimal" value="' + esc(p.invested) + '"></label>' +
+        '<label for="f-val">Wartość dziś (zł)<input id="f-val" inputmode="decimal" value="' + esc(p.value) + '"></label>' +
+      '</div>' +
+      '<label for="f-units">Liczba jednostek (opcjonalnie)<input id="f-units" inputmode="decimal" value="' + esc(p.units || "") + '"></label>' +
+      '<div class="form-actions">' +
+        '<div>' + (p.id ? '<button type="button" class="btn" id="f-buy">Kup</button><button type="button" class="btn" id="f-sell">Sprzedaj</button><button type="button" class="btn danger" id="f-del">Usuń</button>' : "") + '</div>' +
+        '<div class="grp"><button type="button" class="btn" id="f-cancel">Anuluj</button><button type="submit" class="btn primary">Zapisz</button></div>' +
+      '</div>' +
+      '</form>';
+    $("scrim").hidden = false;
+    $("f-cancel").onclick = closeSheet;
+    if (p.id) {
+      $("f-buy").onclick = function () { openBuy(p.id); };
+      $("f-sell").onclick = function () { openSell(p.id); };
+      $("f-del").onclick = function () { state.positions = state.positions.filter(function (x) { return x.id !== p.id; }); closeSheet(); render(); persist(); };
+    }
+    $("pf").onsubmit = function (e) {
+      e.preventDefault();
+      var rec = { id: p.id || uid(), name: $("f-name").value.trim(), klasa: $("f-klasa").value, pokrowec: $("f-pokrowec").value, account: $("f-account").value.trim(), date: $("f-date").value, invested: num($("f-inv").value), value: num($("f-val").value), units: num($("f-units").value), internal: p.id ? (p.internal || 0) : 0, lots: p.lots || [] };
+      var i = state.positions.findIndex(function (x) { return x.id === rec.id; });
+      if (i >= 0) state.positions[i] = rec; else { state.positions.push(rec); if (rec.invested > 0) state.txns.push({ id: uid(), type: "open", name: rec.name, date: rec.date, amount: rec.invested }); }
+      closeSheet(); render(); persist();
+    };
+  }
+
+  function openBuy(id) {
+    var p = state.positions.find(function (x) { return x.id === id; }); if (!p) return;
+    $("sheet").innerHTML =
+      "<h2>Zakup: " + esc(p.name) + "</h2>" +
+      '<div class="sub">Obecnie: wartość ' + fmt(p.value) + ', wpłacono ' + fmt(p.invested) + '</div>' +
+      '<form id="uf">' +
+      '<div class="two"><label for="u-amt">Kwota zakupu (zł)<input id="u-amt" inputmode="decimal" required></label>' +
+      '<label for="u-date">Data zakupu<input id="u-date" type="date" value="' + todayIso() + '"></label></div>' +
+      '<label for="u-units">Liczba kupionych jednostek (opcjonalnie)<input id="u-units" inputmode="decimal"></label>' +
+      '<div class="form-actions"><div></div><div class="grp"><button type="button" class="btn" id="u-cancel">Anuluj</button><button type="submit" class="btn primary">Kup</button></div></div></form>';
+    $("scrim").hidden = false;
+    $("u-cancel").onclick = closeSheet;
+    $("uf").onsubmit = function (e) {
+      e.preventDefault();
+      var amt = num($("u-amt").value); if (!(amt > 0)) return;
+      var date = $("u-date").value || todayIso();
+      p.invested = r2((+p.invested || 0) + amt);
+      p.value = r2((+p.value || 0) + amt);
+      p.lots = (Array.isArray(p.lots) ? p.lots : []).concat([{ date: date, amount: amt }]);
+      var uu = num($("u-units").value);
+      if (uu > 0) p.units = Math.round(((+p.units || 0) + uu) * 1e6) / 1e6;
+      state.txns.push({ id: uid(), type: "buy", name: p.name, date: date, amount: amt, units: uu });
+      closeSheet(); render(); persist();
+    };
+  }
+
+  function openSell(id) {
+    var p = state.positions.find(function (x) { return x.id === id; }); if (!p) return;
+    $("sheet").innerHTML =
+      "<h2>Sprzedaż: " + esc(p.name) + "</h2>" +
+      '<form id="sf">' +
+      '<div class="two"><label for="s-amt">Kwota sprzedaży (zł)<input id="s-amt" inputmode="decimal" required></label>' +
+      '<label for="s-date">Data sprzedaży<input id="s-date" type="date" value="' + todayIso() + '"></label></div>' +
+      '<label for="s-all" style="flex-direction:row;align-items:center;gap:8px"><input id="s-all" type="checkbox" style="width:auto"> Sprzedaję całą pozycję</label>' +
+      '<div class="form-actions"><div></div><div class="grp"><button type="button" class="btn" id="s-cancel">Anuluj</button><button type="submit" class="btn primary">Sprzedaj</button></div></div></form>';
+    $("scrim").hidden = false;
+    $("s-cancel").onclick = closeSheet;
+    $("sf").onsubmit = function (e) {
+      e.preventDefault();
+      var amt = num($("s-amt").value), all = $("s-all").checked;
+      if (!(amt > 0)) return;
+      var date = $("s-date").value || todayIso();
+      var f = all ? 1 : Math.min(1, amt / (+p.value || 1));
+      var cost = (+p.invested || 0) * f;
+      state.sales.push({ id: uid(), name: p.name, buyDate: p.date, date: date, cost: r2(cost), proceeds: amt });
+      state.txns.push({ id: uid(), type: "sell", name: p.name, date: date, amount: amt, gain: r2(amt - cost) });
+      p.invested = r2((+p.invested || 0) - cost);
+      p.value = f >= 1 ? 0 : r2((+p.value || 0) - amt);
+      if (f >= 1) state.positions = state.positions.filter(function (x) { return x.id !== p.id; });
+      closeSheet(); render(); persist();
+    };
+  }
+
+  function openSale(id) {
+    var s = state.sales.find(function (x) { return x.id === id; }); if (!s) return;
+    $("sheet").innerHTML = "<h2>Sprzedaż: " + esc(s.name) + "</h2>" +
+      '<div class="sub">Sprzedano ' + fdate(s.date) + ' za ' + fmt(s.proceeds) + ' (koszt ' + fmt(s.cost) + ').</div>' +
+      '<div class="form-actions"><div><button type="button" class="btn danger" id="x-del">Usuń zapis</button></div><div class="grp"><button type="button" class="btn" id="x-close">Zamknij</button></div></div>';
+    $("scrim").hidden = false;
+    $("x-close").onclick = closeSheet;
+    $("x-del").onclick = function () { state.sales = state.sales.filter(function (x) { return x.id !== id; }); closeSheet(); render(); persist(); };
+  }
+
+  function openChart() {
+    var c = compute(), tdy = todayIso();
+    var vals = state.history.filter(function (h) { return h.d; }).map(function (h) { return { t: dayMs(h.d), v: +h.v || 0 }; }).sort(function (a, b) { return a.t - b.t; });
+    var tNow = dayMs(tdy);
+    if (c.value > 0) { if (vals.length && vals[vals.length - 1].t === tNow) vals[vals.length - 1].v = c.value; else vals.push({ t: tNow, v: c.value }); }
+    
+    var html = "<h2>Wzrost portfela</h2>";
+    if (vals.length < 2) {
+      html += '<div class="empty">Wykres utworzy się po dodaniu kolejnych aktualizacji wartości.</div>';
+    } else {
+      var t0 = vals[0].t, t1 = vals[vals.length - 1].t;
+      if (t1 <= t0) t1 = t0 + 86400000;
+      var all = vals.map(function (p) { return p.v; });
+      var lo = Math.min.apply(null, all), hi = Math.max.apply(null, all);
+      var pad = (hi - lo) * 0.12 || hi * 0.05 || 1; lo = Math.max(0, lo - pad); hi = hi + pad;
+      var W = 360, H = 200, L = 46, R = 12, T = 12, B = 26;
+      function X(t) { return L + (t - t0) / (t1 - t0) * (W - L - R); }
+      function Y(v) { return T + (hi - v) / (hi - lo) * (H - T - B); }
+      var nf = new Intl.NumberFormat("pl-PL", { maximumFractionDigits: 0 });
+      var s = '<svg class="chart" viewBox="0 0 ' + W + ' ' + H + '">';
+      for (var i = 0; i <= 4; i++) {
+        var gv = lo + (hi - lo) * i / 4, gy = Y(gv);
+        s += '<line class="grid" x1="' + L + '" x2="' + (W - R) + '" y1="' + gy + '" y2="' + gy + '"/><text x="' + (L - 5) + '" y="' + (gy + 3) + '" text-anchor="end">' + nf.format(gv) + '</text>';
+      }
+      s += '<polyline class="val" points="' + vals.map(function (p) { return X(p.t) + "," + Y(p.v); }).join(" ") + '"/>';
+      vals.forEach(function (p) { s += '<circle class="dot" cx="' + X(p.t) + '" cy="' + Y(p.v) + '" r="3"/>'; });
+      s += "</svg>";
+      html += s;
+    }
+    html += '<div class="form-actions"><div></div><div class="grp"><button type="button" class="btn" id="c-close">Zamknij</button></div></div>';
+    $("sheet").innerHTML = html;
+    $("scrim").hidden = false;
+    $("c-close").onclick = closeSheet;
+  }
+
+  function openHistory() {
+    var items = state.txns.slice().sort(function (a, b) { return (b.date || "").localeCompare(a.date || ""); });
+    var html = "<h2>Historia transakcji</h2>";
+    if (!items.length) html += '<div class="empty">Brak historii transakcji.</div>';
+    else html += '<div>' + items.map(function (x) {
+      var lab = x.type === "buy" ? "Zakup" : x.type === "sell" ? "Sprzedaż" : "Otwarcie";
+      return '<div class="hrow"><div class="l"><span class="name">' + esc(x.name) + '</span><span class="sub">' + lab + ' · ' + fdate(x.date) + '</span></div><div class="r"><span class="v">' + fmt(x.amount) + '</span></div></div>';
+    }).join("") + '</div>';
+    html += '<div class="form-actions"><div></div><div class="grp"><button type="button" class="btn" id="h-close">Zamknij</button></div></div>';
+    $("sheet").innerHTML = html;
+    $("scrim").hidden = false;
+    $("h-close").onclick = closeSheet;
+  }
+
+  function openBackup() {
+    var data = JSON.stringify(state);
+    $("sheet").innerHTML =
+      '<h2>Kopia zapasowa</h2>' +
+      '<label for="b-out">Dane portfela (JSON)<textarea id="b-out" rows="6" readonly></textarea></label>' +
+      '<label for="b-in">Import danych<textarea id="b-in" rows="4" placeholder="Wklej skopiowany kod JSON"></textarea></label>' +
+      '<div class="form-actions"><div></div><div class="grp"><button type="button" class="btn" id="b-close">Zamknij</button><button type="button" class="btn primary" id="b-load">Importuj</button></div></div>';
+    $("b-out").value = data;
+    $("scrim").hidden = false;
+    $("b-close").onclick = closeSheet;
+    $("b-load").onclick = function () {
+      try {
+        var obj = JSON.parse($("b-in").value);
+        if (obj && Array.isArray(obj.positions)) {
+          applyData(obj); closeSheet(); render(); persist();
+        } else alert("Błędny format danych!");
+      } catch(e) { alert("Błąd parsowania JSON!"); }
+    };
+  }
+
+  // --- INTEGRACJA FIREBASE & SYNC ---
+  function applyData(d) {
+    if (!d) return;
+    state.positions = Array.isArray(d.positions) ? d.positions : [];
+    state.bonuses = Array.isArray(d.bonuses) ? d.bonuses : [];
+    state.history = Array.isArray(d.history) ? d.history : [];
+    state.sales = Array.isArray(d.sales) ? d.sales : [];
+    state.txns = Array.isArray(d.txns) ? d.txns : [];
+    state.targetRisk = typeof d.targetRisk === "number" ? d.targetRisk : 60;
+  }
+
+  function persist() {
+    var cc = compute(), tdy = todayIso();
+    if (cc.value > 0) {
+      var lastH = state.history[state.history.length - 1];
+      if (lastH && lastH.d === tdy) lastH.v = Math.round(cc.value * 100) / 100;
+      else state.history.push({ d: tdy, v: Math.round(cc.value * 100) / 100 });
+    }
+    var data = { positions: state.positions, bonuses: state.bonuses, history: state.history, sales: state.sales, txns: state.txns, targetRisk: state.targetRisk };
+    try { localStorage.setItem(LS_KEY, JSON.stringify(data)); } catch (e) {}
+    
+    if (remoteDocRef) {
+      isRemoteSyncing = true;
+      setDoc(remoteDocRef, data).then(function () { isRemoteSyncing = false; setStatus("Zapisano w chmurze"); }, function () { isRemoteSyncing = false; setStatus("Zapisano tylko lokalnie"); });
+    } else {
+      setStatus("Zapisano tylko lokalnie");
+    }
+  }
+
+  function setStatus(t) { $("status").textContent = t; }
+
+  // Podłączenie Zdarzeń
+  $("addPos").onclick = function () { openPositionModal(null); };
+  $("contrib").oninput = renderPlan;
+  $("histBtn").onclick = openHistory;
+  $("chartBtn").onclick = openChart;
+  $("backupBtn").onclick = openBackup;
+  $("tRisk").onchange = function () {
+    state.targetRisk = Math.min(100, Math.max(0, num($("tRisk").value)));
+    render(); persist();
+  };
+
+  // Auth Lifecycle
+  $("loginBtn").onclick = function() { signInWithPopup(auth, provider).catch(function(err) { alert("Błąd logowania: " + err.message); }); };
+
+  onAuthStateChanged(auth, function(user) {
+    if (user) {
+      $("authBox").innerHTML = '<span class="sub">' + esc(user.displayName || user.email) + '</span> <button class="btn" id="logoutBtn" type="button">Wyloguj</button>';
+      $("logoutBtn").onclick = function() { signOut(auth); };
+      remoteDocRef = doc(db, "users", user.uid, "portfolio", "main");
+      onSnapshot(remoteDocRef, function(docSnap) {
+        if (docSnap.exists() && !isRemoteSyncing) {
+          applyData(docSnap.data());
+          render();
+        }
+      });
+    } else {
+      $("authBox").innerHTML = '<button class="btn primary" id="loginBtnIn" type="button">Logowanie Google</button>';
+      $("loginBtnIn").onclick = function() { signInWithPopup(auth, provider); };
+      remoteDocRef = null;
+      setStatus("Tryb offline (dane na urządzeniu)");
+    }
+  });
+
+  // Start lokalny
+  try { var raw = localStorage.getItem(LS_KEY); if (raw) applyData(JSON.parse(raw)); } catch (e) {}
+  render();
+</script>
+</body>
+</html>
